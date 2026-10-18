@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STARGRID // Neon Trending Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0: #070011;
+    --bg1: #14002b;
+    --cyan: #00f0ff;
+    --pink: #ff2ec4;
+    --violet: #8b5cf6;
+    --txt: #e8e6ff;
+    --mut: #8a86b8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(1000px 600px at 80% -10%, rgba(139,92,246,.25), transparent 60%),
+      radial-gradient(800px 500px at 10% 110%, rgba(255,46,196,.18), transparent 60%),
+      var(--bg0);
+    color: var(--txt);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 玻璃顶栏 */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(18px);
+    background: rgba(10,0,25,.55);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 5vw;
+  }
+  .logo {
+    font-weight: 700; letter-spacing: .25em; font-size: 15px;
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: none;
+  }
+  .logo-tag { font-size: 10px; color: var(--mut); letter-spacing: .2em; margin-left: 12px; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 10vw 6vw 6vw; position: relative; }
+  h1 {
+    font-size: clamp(40px, 8vw, 92px);
+    font-weight: 700; line-height: 1.02; letter-spacing: -.02em;
+  }
+  h1 .g1 {
+    background: linear-gradient(90deg, var(--cyan), var(--violet));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  h1 .g2 {
+    background: linear-gradient(90deg, var(--pink), #ffb84d);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--mut); max-width: 540px; margin: 22px auto 0; font-size: 15px; line-height: 1.7; }
+
+  /* 排序条 */
+  .controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 26px 5vw; }
+  .chip {
+    padding: 9px 20px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.04); color: var(--txt);
+    font: 600 12px 'Space Grotesk'; letter-spacing: .1em;
+    transition: all .25s;
+  }
+  .chip:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 18px rgba(0,240,255,.25); }
+  .chip.on { background: linear-gradient(90deg, var(--cyan), var(--violet)); color: #05010e; border-color: transparent; }
+
+  /* 星轨卡片 */
+  main { max-width: 1200px; margin: 0 auto; padding: 10px 5vw 90px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 26px; perspective: 1200px; }
+
+  .card {
+    position: relative;
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.1);
+    backdrop-filter: blur(14px);
+    padding: 26px 26px 22px;
+    transition: transform .45s cubic-bezier(.2,.8,.25,1), box-shadow .45s, border-color .45s;
+    transform-style: preserve-3d;
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; inset: -1px;
+    border-radius: 20px; padding: 1px;
+    background: linear-gradient(135deg, var(--accent, var(--cyan)), transparent 40%, transparent 60%, var(--accent, var(--cyan)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: .5; transition: opacity .4s;
+    pointer-events: none;
+  }
+  .card:hover {
+    transform: translateY(-8px) rotateX(4deg);
+    box-shadow: 0 24px 60px -18px var(--glow, rgba(0,240,255,.45));
+    border-color: transparent;
+  }
+  .card:hover::before { opacity: 1; }
+
+  .rank {
+    position: absolute; top: 14px; right: 20px;
+    font-size: 54px; font-weight: 700; line-height: 1;
+    color: rgba(255,255,255,.06);
+  }
+  .card h2 { font-size: 21px; font-weight: 700; margin-bottom: 4px; letter-spacing: -.01em; }
+  .lang {
+    display: inline-block; font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent, var(--cyan)); margin-bottom: 14px;
+  }
+  .card .desc { font-size: 13.5px; color: #b9b5dd; line-height: 1.65; min-height: 66px; }
+  .stats { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 18px; }
+  .stat {
+    font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  }
+  .stat.hot { color: var(--pink); border-color: rgba(255,46,196,.4); }
+  .card a.link {
+    font-size: 12px; font-weight: 600; letter-spacing: .08em;
+    color: var(--accent, var(--cyan)); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .card a.link:hover { text-shadow: 0 0 12px var(--accent, var(--cyan)); }
+
+  /* mini bar chart */
+  .bars { display: flex; align-items: flex-end; gap: 4px; height: 34px; margin-top: 6px; }
+  .bars i {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: linear-gradient(to top, var(--accent, var(--cyan)), transparent);
+    opacity: .75;
+  }
+
+  footer {
+    text-align: center; padding: 30px 5vw 50px;
+    color: var(--mut); font-size: 11px; letter-spacing: .2em;
+    border-top: 1px solid rgba(255,255,255,.07);
+  }
+
+  #nohit { text-align: center; color: var(--mut); padding: 70px 0; letter-spacing: .15em; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:baseline">
+    <span class="logo">STARGRID</span>
+    <span class="logo-tag">/ trending, visualized</span>
+  </div>
+  <span style="font-size:11px;color:var(--mut);letter-spacing:.15em">WEEK 44 · 2026</span>
+</header>
+
+<section class="hero">
+  <h1><span class="g1">The Week</span> Open Source<br><span class="g2">Went Supernova</span></h1>
+  <p>Eight repositories, one story: agents everywhere — writing, speaking, reverse engineering, remembering. Hover the cards. Sort the stars.</p>
+</section>
+
+<div class="controls" id="controls">
+  <button class="chip on" data-sort="stars">★ Most Stars</button>
+  <button class="chip" data-sort="delta">▲ Fastest Rising</button>
+  <button class="chip" data-sort="name">A→Z</button>
+  <button class="chip" data-filter="re" style="border-color:var(--pink)">◉ RE only</button>
+  <button class="chip" data-filter="" style="border-color:var(--cyan)">◉ All fields</button>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div id="nohit" class="hidden">NO SIGNAL — try another filter.</div>
+</main>
+
+<footer>STARGRID · DATA: GITHUB TRENDING · BUILT IN ONE HTML FILE · NO JS FRAMEWORKS HARMED</footer>
+
+<script>
+  const DATA = [
+    { name:'obra/superpowers', lang:'Shell', stars:300200, starStr:'★ 300.2k', delta:582,
+      desc:'Agent skills framework & software development methodology. The 800-pound gorilla of the board.',
+      tags:['Agent','Skills'], cat:'agent', accent:'#8b5cf6', glow:'rgba(139,92,246,.5)',
+      url:'https://github.com/obra/superpowers', bars:[62,65,61,70,66,72,75] },
+    { name:'morluto/rea', lang:'TypeScript', stars:277900, starStr:'★ 277.9k', delta:32314,
+      desc:'Reverse engineer anything with agents — from app behavior down to native binaries. Today\'s runaway #1.',
+      tags:['RE','Hot'], cat:'re', accent:'#ff2ec4', glow:'rgba(255,46,196,.5)',
+      url:'https://github.com/morluto/rea', bars:[20,40,90,100,100,100,100] },
+    { name:'JuliusBrussee/caveman', lang:'Go', stars:112800, starStr:'★ 112.8k', delta:433,
+      desc:'Why use many token when few token do trick. Cuts 65% of tokens by talking like a caveman.',
+      tags:['Token','Viral'], cat:'agent', accent:'#00f0ff', glow:'rgba(0,240,255,.5)',
+      url:'https://github.com/JuliusBrussee/caveman', bars:[50,55,52,58,54,60,57] },
+    { name:'NationalSecurityAgency/ghidra', lang:'Java', stars:89100, starStr:'★ 89.1k', delta:1369,
+      desc:'NSA\'s software reverse engineering framework. The classic disassembler, back on the charts.',
+      tags:['RE','NSA'], cat:'re', accent:'#ffb84d', glow:'rgba(255,184,77,.45)',
+      url:'https://github.com/NationalSecurityAgency/ghidra', bars:[40,42,45,44,50,52,55] },
+    { name:'debpalash/VoiceStudio', lang:'Python', stars:69700, starStr:'★ 69.7k', delta:3024,
+      desc:'Fully-local ElevenLabs alternative: voice cloning, dubbing, transcription in 646 languages.',
+      tags:['Voice','Local'], cat:'voice', accent:'#4dffb8', glow:'rgba(77,255,184,.45)',
+      url:'https://github.com/debpalash/VoiceStudio', bars:[30,45,60,70,80,92,98] },
+    { name:'K-Dense-AI/scientific-agent-skills', lang:'Python', stars:50800, starStr:'★ 50.8k', delta:1091,
+      desc:'Turn any agent into an AI scientist. 177 validated skills + 100+ scientific databases.',
+      tags:['Science','Skills'], cat:'science', accent:'#7dd3fc', glow:'rgba(125,211,252,.45)',
+      url:'https://github.com/K-Dense-AI/scientific-agent-skills', bars:[35,38,42,48,50,55,58] },
+    { name:'mksglu/context-mode', lang:'TypeScript', stars:29900, starStr:'★ 29.9k', delta:904,
+      desc:'Context window optimization: sandboxed tool output (98% smaller), persistent memory, MCP + hooks.',
+      tags:['Token','MCP'], cat:'agent', accent:'#c084fc', glow:'rgba(192,132,252,.45)',
+      url:'https://github.com/mksglu/context-mode', bars:[25,28,32,35,40,44,48] },
+    { name:'xerj-org/xerj', lang:'Rust', stars:6000, starStr:'★ 6.0k', delta:715,
+      desc:'Autoindex code, docs, logs & PDFs for agent memory. 40x fewer tokens than grep. ES-compatible.',
+      tags:['Rust','Search'], cat:'agent', accent:'#f97316', glow:'rgba(249,115,22,.45)',
+      url:'https://github.com/xerj-org/xerj', bars:[5,8,12,18,26,35,46] },
+  ];
+
+  const grid = document.getElementById('grid');
+  let sortBy = 'stars', filterCat = '';
+
+  function fmt(n) { return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : n; }
+
+  function draw() {
+    let rows = DATA.filter(r => !filterCat || r.cat === filterCat);
+    if (sortBy === 'stars') rows.sort((a,b) => b.stars - a.stars);
+    if (sortBy === 'delta') rows.sort((a,b) => b.delta - a.delta);
+    if (sortBy === 'name')  rows.sort((a,b) => a.name.localeCompare(b.name));
+
+    grid.innerHTML = '';
+    rows.forEach((r, i) => {
+      const el = document.createElement('article');
+      el.className = 'card';
+      el.style.setProperty('--accent', r.accent);
+      el.style.setProperty('--glow', r.glow);
+      const bars = r.bars.map(h => '<i style="height:' + h + '%"></i>').join('');
+      el.innerHTML =
+        '<span class="rank">' + String(i+1).padStart(2,'0') + '</span>' +
+        '<h2>' + r.name.split('/').pop() + '</h2>' +
+        '<span class="lang">' + r.lang + ' · ' + r.tags.join(' / ') + '</span>' +
+        '<p class="desc">' + r.desc + '</p>' +
+        '<div class="stats"><span class="stat">' + r.starStr + '</span><span class="stat hot">▲ +' + fmt(r.delta) + '/day</span></div>' +
+        '<div class="bars" title="7-day momentum">' + bars + '</div><br>' +
+        '<a class="link" href="' + r.url + '" target="_blank" rel="noopener">OPEN REPO ↗</a>';
+      grid.appendChild(el);
+    });
+    document.getElementById('nohit').classList.toggle('hidden', rows.length > 0);
+  }
+
+  document.querySelectorAll('#controls .chip').forEach(c => {
+    c.addEventListener('click', () => {
+      if (c.dataset.sort) {
+        sortBy = c.dataset.sort;
+        document.querySelectorAll('[data-sort]').forEach(x => x.classList.remove('on'));
+        c.classList.add('on');
+      } else {
+        filterCat = c.dataset.filter;
+        document.querySelectorAll('[data-filter]').forEach(x => x.classList.remove('on'));
+        c.classList.add('on');
+      }
+      draw();
+    });
+  });
+
+  draw();
+</script>
+</body>
+</html>
